@@ -12,7 +12,7 @@ type Manager interface {
 	List() []game.Server
 	Register(server game.Server)
 	Unregister(server game.Server)
-	Connect(id string, sd webrtc.SessionDescription) (webrtc.SessionDescription, error)
+	Connect(id string, sd *webrtc.SessionDescription) (*webrtc.SessionDescription, error)
 }
 
 type manager struct {
@@ -47,12 +47,12 @@ func (m *manager) Unregister(server game.Server) {
 
 var ErrInvalidServer = errors.New("invalid server")
 
-func (m *manager) Connect(id string, sd webrtc.SessionDescription) (webrtc.SessionDescription, error) {
+func (m *manager) Connect(id string, sd *webrtc.SessionDescription) (*webrtc.SessionDescription, error) {
 	m.lock.RLock()
 	s, ok := m.servers[id]
 	m.lock.RUnlock()
 	if !ok {
-		return webrtc.SessionDescription{}, ErrInvalidServer
+		return nil, ErrInvalidServer
 	}
 
 	return s.Connect(sd)

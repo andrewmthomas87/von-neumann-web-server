@@ -44,8 +44,8 @@ func main() {
 	app.Post("/connect/:id", func(c *fiber.Ctx) error {
 		id := c.Params("id")
 
-		var sd webrtc.SessionDescription
-		if err := c.BodyParser(&sd); err != nil {
+		sd := new(webrtc.SessionDescription)
+		if err := c.BodyParser(sd); err != nil {
 			return err
 		}
 
@@ -58,11 +58,14 @@ func main() {
 	})
 
 	app.Get("/ws", websocket.New(func(c *websocket.Conn) {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
 		s := game.NewServer(c)
 		m.Register(s)
 		defer m.Unregister(s)
 
-		s.Run(context.Background())
+		_ = s.Run(ctx)
 	}))
 
 	log.Fatal(app.Listen(viper.GetString("addr")))

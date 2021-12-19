@@ -15,7 +15,7 @@ import (
 type Server interface {
 	ID() string
 	Run(ctx context.Context) error
-	Connect(sd webrtc.SessionDescription) (webrtc.SessionDescription, error)
+	Connect(sd *webrtc.SessionDescription) (*webrtc.SessionDescription, error)
 }
 
 type message struct {
@@ -24,8 +24,8 @@ type message struct {
 }
 
 type connectRequest struct {
-	sd      webrtc.SessionDescription
-	res     chan webrtc.SessionDescription
+	sd      *webrtc.SessionDescription
+	res     chan *webrtc.SessionDescription
 	errored chan error
 }
 
@@ -43,7 +43,7 @@ func (s *server) ID() string {
 }
 
 func (s *server) Run(ctx context.Context) error {
-	g, _ := errgroup.WithContext(ctx)
+	g, ctx := errgroup.WithContext(ctx)
 
 	g.Go(func() error {
 		for {
@@ -111,7 +111,7 @@ func (s *server) Run(ctx context.Context) error {
 							cr.errored <- err
 							return
 						}
-						cr.res <- sd
+						cr.res <- &sd
 					}
 				}()
 			}
@@ -121,14 +121,14 @@ func (s *server) Run(ctx context.Context) error {
 	return g.Wait()
 }
 
-func (s *server) Connect(sd webrtc.SessionDescription) (webrtc.SessionDescription, error) {
-	res := make(chan webrtc.SessionDescription, 1)
+func (s *server) Connect(sd *webrtc.SessionDescription) (*webrtc.SessionDescription, error) {
+	res := make(chan *webrtc.SessionDescription, 1)
 	errored := make(chan error, 1)
 	s.connectQueue <- connectRequest{sd, res, errored}
 
 	select {
 	case err := <-errored:
-		return webrtc.SessionDescription{}, err
+		return nil, err
 	case sd := <-res:
 		return sd, nil
 	}
