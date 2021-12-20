@@ -19,7 +19,7 @@ type Server interface {
 
 type message struct {
 	ID      string `json:"id,omitempty"`
-	Payload []byte `json:"payload,omitempty"`
+	Payload string `json:"payload,omitempty"`
 }
 
 type connectRequest struct {
@@ -33,7 +33,7 @@ type server struct {
 	c            *websocket.Conn
 	in           chan []byte
 	out          chan []byte
-	pending      map[string]chan []byte
+	pending      map[string]chan string
 	connectQueue chan connectRequest
 }
 
@@ -71,7 +71,7 @@ func (s *server) Run(ctx context.Context) error {
 				close(s.in)
 				close(s.out)
 				close(s.connectQueue)
-				s.pending = make(map[string]chan []byte)
+				s.pending = make(map[string]chan string)
 				return nil
 			case msg := <-s.in:
 				var m message
@@ -89,7 +89,7 @@ func (s *server) Run(ctx context.Context) error {
 				res <- m.Payload
 			case cr := <-s.connectQueue:
 				id := uuid.NewString()
-				res := make(chan []byte, 1)
+				res := make(chan string, 1)
 
 				b, err := marshalMessage(id, cr.sd)
 				if err != nil {
@@ -104,9 +104,9 @@ func (s *server) Run(ctx context.Context) error {
 					select {
 					case <-ctx.Done():
 						return
-					case b := <-res:
+					case p := <-res:
 						var sd webrtc.SessionDescription
-						if err := json.Unmarshal(b, &sd); err != nil {
+						if err := json.Unmarshal([]byte(p), &sd); err != nil {
 							cr.errored <- err
 							return
 						}
@@ -139,7 +139,7 @@ func NewServer(c *websocket.Conn) Server {
 		c:            c,
 		in:           make(chan []byte),
 		out:          make(chan []byte),
-		pending:      make(map[string]chan []byte),
+		pending:      make(map[string]chan string),
 		connectQueue: make(chan connectRequest),
 	}
 }
@@ -150,7 +150,7 @@ func marshalMessage(id string, payload interface{}) ([]byte, error) {
 		return nil, err
 	}
 
-	m := message{id, b}
+	m := message{id, string(b)}
 	b, err = json.Marshal(m)
 	if err != nil {
 		return nil, err
