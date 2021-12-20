@@ -41,6 +41,11 @@ func (s *server) ID() string {
 	return s.id
 }
 
+type sessionDescription struct {
+	Type string `json:"type,omitempty"`
+	SDP  string `json:"sdp,omitempty"`
+}
+
 func (s *server) Run(ctx context.Context) error {
 	g, ctx := errgroup.WithContext(ctx)
 
@@ -91,7 +96,10 @@ func (s *server) Run(ctx context.Context) error {
 				id := uuid.NewString()
 				res := make(chan string, 1)
 
-				b, err := marshalMessage(id, cr.sd)
+				b, err := marshalMessage(id, sessionDescription{
+					Type: cr.sd.Type.String(),
+					SDP:  cr.sd.SDP,
+				})
 				if err != nil {
 					cr.errored <- err
 					continue
