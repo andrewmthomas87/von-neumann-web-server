@@ -5,11 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"golang.org/x/sync/errgroup"
-
 	"github.com/gofiber/websocket/v2"
 	"github.com/google/uuid"
 	"github.com/pion/webrtc/v3"
+	"golang.org/x/sync/errgroup"
 )
 
 type Server interface {

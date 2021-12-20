@@ -7,6 +7,7 @@ import (
 	"github.com/andrewmthomas87/von-neumann-web-server/game"
 	"github.com/andrewmthomas87/von-neumann-web-server/manager"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/websocket/v2"
@@ -24,12 +25,13 @@ func main() {
 	}
 
 	viper.SetDefault("addr", ":9000")
+	viper.SetDefault("cors.allowOrigins", "http://localhost:3000")
 
 	m := manager.New()
 
 	app := fiber.New()
 
-	app.Use(recover.New(), logger.New())
+	app.Use(recover.New(), logger.New(), cors.New(cors.Config{AllowOrigins: viper.GetString("cors.allowOrigins")}))
 
 	app.Get("/list-servers", func(c *fiber.Ctx) error {
 		servers := m.List()
